@@ -20,6 +20,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/ent/storagepolicy"
 	"github.com/cloudreve/Cloudreve/v4/ent/task"
 	"github.com/cloudreve/Cloudreve/v4/ent/user"
+	"github.com/cloudreve/Cloudreve/v4/ent/useridentity"
 	"github.com/cloudreve/Cloudreve/v4/inventory/types"
 )
 
@@ -342,6 +343,29 @@ func init() {
 	userDescSettings := userFields[7].Descriptor()
 	// user.DefaultSettings holds the default value on creation for the settings field.
 	user.DefaultSettings = userDescSettings.Default.(*types.UserSetting)
+	useridentityMixin := schema.UserIdentity{}.Mixin()
+	useridentityMixinHooks0 := useridentityMixin[0].Hooks()
+	useridentity.Hooks[0] = useridentityMixinHooks0[0]
+	useridentityMixinInters0 := useridentityMixin[0].Interceptors()
+	useridentity.Interceptors[0] = useridentityMixinInters0[0]
+	useridentityMixinFields0 := useridentityMixin[0].Fields()
+	_ = useridentityMixinFields0
+	useridentityFields := schema.UserIdentity{}.Fields()
+	_ = useridentityFields
+	// useridentityDescCreatedAt is the schema descriptor for created_at field.
+	useridentityDescCreatedAt := useridentityMixinFields0[0].Descriptor()
+	// useridentity.DefaultCreatedAt holds the default value on creation for the created_at field.
+	useridentity.DefaultCreatedAt = useridentityDescCreatedAt.Default.(func() time.Time)
+	// useridentityDescUpdatedAt is the schema descriptor for updated_at field.
+	useridentityDescUpdatedAt := useridentityMixinFields0[1].Descriptor()
+	// useridentity.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	useridentity.DefaultUpdatedAt = useridentityDescUpdatedAt.Default.(func() time.Time)
+	// useridentity.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	useridentity.UpdateDefaultUpdatedAt = useridentityDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// useridentityDescEmailVerified is the schema descriptor for email_verified field.
+	useridentityDescEmailVerified := useridentityFields[5].Descriptor()
+	// useridentity.DefaultEmailVerified holds the default value on creation for the email_verified field.
+	useridentity.DefaultEmailVerified = useridentityDescEmailVerified.Default.(bool)
 }
 
 const (

@@ -20,6 +20,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/ent/share"
 	"github.com/cloudreve/Cloudreve/v4/ent/task"
 	"github.com/cloudreve/Cloudreve/v4/ent/user"
+	"github.com/cloudreve/Cloudreve/v4/ent/useridentity"
 	"github.com/cloudreve/Cloudreve/v4/inventory/types"
 )
 
@@ -236,6 +237,21 @@ func (uc *UserCreate) AddPasskey(p ...*Passkey) *UserCreate {
 		ids[i] = p[i].ID
 	}
 	return uc.AddPasskeyIDs(ids...)
+}
+
+// AddIdentityIDs adds the "identities" edge to the UserIdentity entity by IDs.
+func (uc *UserCreate) AddIdentityIDs(ids ...int) *UserCreate {
+	uc.mutation.AddIdentityIDs(ids...)
+	return uc
+}
+
+// AddIdentities adds the "identities" edges to the UserIdentity entity.
+func (uc *UserCreate) AddIdentities(u ...*UserIdentity) *UserCreate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uc.AddIdentityIDs(ids...)
 }
 
 // AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
@@ -542,6 +558,22 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.IdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

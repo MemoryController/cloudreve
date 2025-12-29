@@ -11,6 +11,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/pkg/email"
 	"github.com/cloudreve/Cloudreve/v4/pkg/hashid"
 	"github.com/cloudreve/Cloudreve/v4/pkg/logging"
+	"github.com/cloudreve/Cloudreve/v4/pkg/oidc"
 	"github.com/cloudreve/Cloudreve/v4/pkg/setting"
 	"github.com/gin-contrib/static"
 )
@@ -117,6 +118,13 @@ func WithUserClient(s inventory.UserClient) Option {
 	})
 }
 
+// WithUserIdentityClient Set the default user identity client
+func WithUserIdentityClient(s inventory.UserIdentityClient) Option {
+	return optionFunc(func(o *dependency) {
+		o.userIdentityClient = s
+	})
+}
+
 // WithEmailClient Set the default email client
 func WithEmailClient(s email.Driver) Option {
 	return optionFunc(func(o *dependency) {
@@ -142,6 +150,13 @@ func WithHashIDEncoder(s hashid.Encoder) Option {
 func WithTokenAuth(s auth.TokenAuth) Option {
 	return optionFunc(func(o *dependency) {
 		o.tokenAuth = s
+	})
+}
+
+// WithOIDCManager Set the default OIDC manager.
+func WithOIDCManager(s *oidc.Manager) Option {
+	return optionFunc(func(o *dependency) {
+		o.oidcManager = s
 	})
 }
 

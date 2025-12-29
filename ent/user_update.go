@@ -21,6 +21,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/ent/share"
 	"github.com/cloudreve/Cloudreve/v4/ent/task"
 	"github.com/cloudreve/Cloudreve/v4/ent/user"
+	"github.com/cloudreve/Cloudreve/v4/ent/useridentity"
 	"github.com/cloudreve/Cloudreve/v4/inventory/types"
 )
 
@@ -283,6 +284,21 @@ func (uu *UserUpdate) AddPasskey(p ...*Passkey) *UserUpdate {
 	return uu.AddPasskeyIDs(ids...)
 }
 
+// AddIdentityIDs adds the "identities" edge to the UserIdentity entity by IDs.
+func (uu *UserUpdate) AddIdentityIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddIdentityIDs(ids...)
+	return uu
+}
+
+// AddIdentities adds the "identities" edges to the UserIdentity entity.
+func (uu *UserUpdate) AddIdentities(u ...*UserIdentity) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.AddIdentityIDs(ids...)
+}
+
 // AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
 func (uu *UserUpdate) AddTaskIDs(ids ...int) *UserUpdate {
 	uu.mutation.AddTaskIDs(ids...)
@@ -421,6 +437,27 @@ func (uu *UserUpdate) RemovePasskey(p ...*Passkey) *UserUpdate {
 		ids[i] = p[i].ID
 	}
 	return uu.RemovePasskeyIDs(ids...)
+}
+
+// ClearIdentities clears all "identities" edges to the UserIdentity entity.
+func (uu *UserUpdate) ClearIdentities() *UserUpdate {
+	uu.mutation.ClearIdentities()
+	return uu
+}
+
+// RemoveIdentityIDs removes the "identities" edge to UserIdentity entities by IDs.
+func (uu *UserUpdate) RemoveIdentityIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveIdentityIDs(ids...)
+	return uu
+}
+
+// RemoveIdentities removes "identities" edges to UserIdentity entities.
+func (uu *UserUpdate) RemoveIdentities(u ...*UserIdentity) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.RemoveIdentityIDs(ids...)
 }
 
 // ClearTasks clears all "tasks" edges to the Task entity.
@@ -813,6 +850,51 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RemovedIdentitiesIDs(); len(nodes) > 0 && !uu.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.IdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -1221,6 +1303,21 @@ func (uuo *UserUpdateOne) AddPasskey(p ...*Passkey) *UserUpdateOne {
 	return uuo.AddPasskeyIDs(ids...)
 }
 
+// AddIdentityIDs adds the "identities" edge to the UserIdentity entity by IDs.
+func (uuo *UserUpdateOne) AddIdentityIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddIdentityIDs(ids...)
+	return uuo
+}
+
+// AddIdentities adds the "identities" edges to the UserIdentity entity.
+func (uuo *UserUpdateOne) AddIdentities(u ...*UserIdentity) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.AddIdentityIDs(ids...)
+}
+
 // AddTaskIDs adds the "tasks" edge to the Task entity by IDs.
 func (uuo *UserUpdateOne) AddTaskIDs(ids ...int) *UserUpdateOne {
 	uuo.mutation.AddTaskIDs(ids...)
@@ -1359,6 +1456,27 @@ func (uuo *UserUpdateOne) RemovePasskey(p ...*Passkey) *UserUpdateOne {
 		ids[i] = p[i].ID
 	}
 	return uuo.RemovePasskeyIDs(ids...)
+}
+
+// ClearIdentities clears all "identities" edges to the UserIdentity entity.
+func (uuo *UserUpdateOne) ClearIdentities() *UserUpdateOne {
+	uuo.mutation.ClearIdentities()
+	return uuo
+}
+
+// RemoveIdentityIDs removes the "identities" edge to UserIdentity entities by IDs.
+func (uuo *UserUpdateOne) RemoveIdentityIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveIdentityIDs(ids...)
+	return uuo
+}
+
+// RemoveIdentities removes "identities" edges to UserIdentity entities.
+func (uuo *UserUpdateOne) RemoveIdentities(u ...*UserIdentity) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.RemoveIdentityIDs(ids...)
 }
 
 // ClearTasks clears all "tasks" edges to the Task entity.
@@ -1781,6 +1899,51 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(passkey.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RemovedIdentitiesIDs(); len(nodes) > 0 && !uuo.mutation.IdentitiesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.IdentitiesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.IdentitiesTable,
+			Columns: []string{user.IdentitiesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(useridentity.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

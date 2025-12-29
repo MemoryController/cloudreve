@@ -533,6 +533,7 @@ var DefaultSettings = map[string]string{
 	"cron_trash_bin_collect":                     "@every 33m",
 	"cron_oauth_cred_refresh":                    "@every 230h",
 	"authn_enabled":                              "1",
+	"oidc_providers":                             "[]",
 	"captcha_type":                               "normal",
 	"captcha_height":                             "60",
 	"captcha_width":                              "240",
