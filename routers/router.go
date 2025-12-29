@@ -278,6 +278,22 @@ func initMasterRouter(dep dependency.Dep) *gin.Engine {
 		}
 
 		// User authentication
+		auth := v4.Group("auth")
+		{
+			oidcGroup := auth.Group("oidc")
+			{
+				oidcGroup.GET(":provider",
+					controllers.FromUri[usersvc.OIDCStartService](usersvc.OIDCStartParameterCtx{}),
+					controllers.OIDCStart,
+				)
+				oidcGroup.GET(":provider/callback",
+					controllers.FromQuery[usersvc.OIDCCallbackService](usersvc.OIDCCallbackParameterCtx{}),
+					controllers.OIDCCallback,
+					controllers.UserIssueToken,
+				)
+			}
+		}
+
 		session := v4.Group("session")
 		{
 			token := session.Group("token")

@@ -21,6 +21,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/ent/share"
 	"github.com/cloudreve/Cloudreve/v4/ent/task"
 	"github.com/cloudreve/Cloudreve/v4/ent/user"
+	"github.com/cloudreve/Cloudreve/v4/ent/useridentity"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -35,6 +36,7 @@ type UserQuery struct {
 	withDavAccounts *DavAccountQuery
 	withShares      *ShareQuery
 	withPasskey     *PasskeyQuery
+	withIdentities  *UserIdentityQuery
 	withTasks       *TaskQuery
 	withFsevents    *FsEventQuery
 	withEntities    *EntityQuery
@@ -177,6 +179,28 @@ func (uq *UserQuery) QueryPasskey() *PasskeyQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(passkey.Table, passkey.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.PasskeyTable, user.PasskeyColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryIdentities chains the current query on the "identities" edge.
+func (uq *UserQuery) QueryIdentities() *UserIdentityQuery {
+	query := (&UserIdentityClient{config: uq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := uq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(useridentity.Table, useridentity.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.IdentitiesTable, user.IdentitiesColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
 		return fromU, nil
@@ -447,6 +471,7 @@ func (uq *UserQuery) Clone() *UserQuery {
 		withDavAccounts: uq.withDavAccounts.Clone(),
 		withShares:      uq.withShares.Clone(),
 		withPasskey:     uq.withPasskey.Clone(),
+		withIdentities:  uq.withIdentities.Clone(),
 		withTasks:       uq.withTasks.Clone(),
 		withFsevents:    uq.withFsevents.Clone(),
 		withEntities:    uq.withEntities.Clone(),
@@ -508,6 +533,17 @@ func (uq *UserQuery) WithPasskey(opts ...func(*PasskeyQuery)) *UserQuery {
 		opt(query)
 	}
 	uq.withPasskey = query
+	return uq
+}
+
+// WithIdentities tells the query-builder to eager-load the nodes that are connected to
+// the "identities" edge. The optional arguments are used to configure the query builder of the edge.
+func (uq *UserQuery) WithIdentities(opts ...func(*UserIdentityQuery)) *UserQuery {
+	query := (&UserIdentityClient{config: uq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withIdentities = query
 	return uq
 }
 
@@ -622,12 +658,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = uq.querySpec()
-		loadedTypes = [8]bool{
+		loadedTypes = [9]bool{
 			uq.withGroup != nil,
 			uq.withFiles != nil,
 			uq.withDavAccounts != nil,
 			uq.withShares != nil,
 			uq.withPasskey != nil,
+			uq.withIdentities != nil,
 			uq.withTasks != nil,
 			uq.withFsevents != nil,
 			uq.withEntities != nil,
@@ -682,6 +719,13 @@ func (uq *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := uq.loadPasskey(ctx, query, nodes,
 			func(n *User) { n.Edges.Passkey = []*Passkey{} },
 			func(n *User, e *Passkey) { n.Edges.Passkey = append(n.Edges.Passkey, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := uq.withIdentities; query != nil {
+		if err := uq.loadIdentities(ctx, query, nodes,
+			func(n *User) { n.Edges.Identities = []*UserIdentity{} },
+			func(n *User, e *UserIdentity) { n.Edges.Identities = append(n.Edges.Identities, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -844,6 +888,36 @@ func (uq *UserQuery) loadPasskey(ctx context.Context, query *PasskeyQuery, nodes
 	}
 	query.Where(predicate.Passkey(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.PasskeyColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (uq *UserQuery) loadIdentities(ctx context.Context, query *UserIdentityQuery, nodes []*User, init func(*User), assign func(*User, *UserIdentity)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(useridentity.FieldUserID)
+	}
+	query.Where(predicate.UserIdentity(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.IdentitiesColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

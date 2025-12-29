@@ -85,3 +85,9 @@ func (m *TaskMutation) SetRawID(t int) {
 func (m *UserMutation) SetRawID(t int) {
 	m.id = &t
 }
+
+// SetUpdatedAt sets the "updated_at" field.
+
+func (m *UserIdentityMutation) SetRawID(t int) {
+	m.id = &t
+}

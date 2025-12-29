@@ -164,6 +164,8 @@ type (
 		LegalDocuments(ctx context.Context) *LegalDocuments
 		// Captcha returns the captcha settings.
 		Captcha(ctx context.Context) *Captcha
+		// OIDCProviders returns the configured OIDC providers.
+		OIDCProviders(ctx context.Context) []OIDCProvider
 		// ExplorerFrontendSettings returns the explorer frontend settings.
 		ExplorerFrontendSettings(ctx context.Context) *ExplorerFrontendSettings
 		// SearchCategoryQuery returns the search category query.
@@ -378,6 +380,15 @@ func (s *settingProvider) Captcha(ctx context.Context) *Captcha {
 		IsShowSineLine:     s.getBoolean(ctx, "captcha_IsShowSineLine", false),
 		Length:             s.getInt(ctx, "captcha_CaptchaLen", 6),
 	}
+}
+
+func (s *settingProvider) OIDCProviders(ctx context.Context) []OIDCProvider {
+	raw := s.getString(ctx, "oidc_providers", "[]")
+	var providers []OIDCProvider
+	if err := json.Unmarshal([]byte(raw), &providers); err != nil {
+		return []OIDCProvider{}
+	}
+	return providers
 }
 
 func (s *settingProvider) LegalDocuments(ctx context.Context) *LegalDocuments {

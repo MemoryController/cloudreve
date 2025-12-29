@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	iofs "io/fs"
+	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -24,6 +25,7 @@ import (
 	"github.com/cloudreve/Cloudreve/v4/pkg/hashid"
 	"github.com/cloudreve/Cloudreve/v4/pkg/logging"
 	"github.com/cloudreve/Cloudreve/v4/pkg/mediameta"
+	"github.com/cloudreve/Cloudreve/v4/pkg/oidc"
 	"github.com/cloudreve/Cloudreve/v4/pkg/queue"
 	"github.com/cloudreve/Cloudreve/v4/pkg/request"
 	"github.com/cloudreve/Cloudreve/v4/pkg/setting"
@@ -71,6 +73,8 @@ type Dep interface {
 	SettingProvider() setting.Provider
 	// UserClient Creates a new inventory.UserClient instance for access DB user store.
 	UserClient() inventory.UserClient
+	// UserIdentityClient Creates a new inventory.UserIdentityClient instance for access DB user identity store.
+	UserIdentityClient() inventory.UserIdentityClient
 	// GroupClient Creates a new inventory.GroupClient instance for access DB group store.
 	GroupClient() inventory.GroupClient
 	// EmailClient Get a singleton email.Driver instance for sending emails.
@@ -91,6 +95,8 @@ type Dep interface {
 	HashIDEncoder() hashid.Encoder
 	// TokenAuth Get a singleton auth.TokenAuth instance for token authentication.
 	TokenAuth() auth.TokenAuth
+	// OIDCManager Get a singleton oidc.Manager instance for OIDC providers.
+	OIDCManager() *oidc.Manager
 	// LockSystem Get a singleton lock.LockSystem instance for file lock management.
 	LockSystem() lock.LockSystem
 	// ShareClient Creates a new inventory.ShareClient instance for access DB share store.
@@ -153,6 +159,7 @@ type dependency struct {
 	shareClient           inventory.ShareClient
 	settingProvider       setting.Provider
 	userClient            inventory.UserClient
+	userIdentityClient    inventory.UserIdentityClient
 	groupClient           inventory.GroupClient
 	storagePolicyClient   inventory.StoragePolicyClient
 	taskClient            inventory.TaskClient
@@ -184,6 +191,7 @@ type dependency struct {
 	cron                  *cron.Cron
 	masterEncryptKeyVault encrypt.MasterEncryptKeyVault
 	eventHub              eventhub.EventHub
+	oidcManager           *oidc.Manager
 
 	configPath        string
 	isPro             bool
@@ -431,6 +439,14 @@ func (d *dependency) UserClient() inventory.UserClient {
 	}
 
 	return inventory.NewUserClient(d.DBClient())
+}
+
+func (d *dependency) UserIdentityClient() inventory.UserIdentityClient {
+	if d.userIdentityClient != nil {
+		return d.userIdentityClient
+	}
+
+	return inventory.NewUserIdentityClient(d.DBClient())
 }
 
 func (d *dependency) GroupClient() inventory.GroupClient {
@@ -787,6 +803,15 @@ func (d *dependency) TokenAuth() auth.TokenAuth {
 	d.tokenAuth = auth.NewTokenAuth(d.HashIDEncoder(), d.SettingProvider(),
 		[]byte(d.SettingProvider().SecretKey(context.Background())), d.UserClient(), d.Logger(), d.KV())
 	return d.tokenAuth
+}
+
+func (d *dependency) OIDCManager() *oidc.Manager {
+	if d.oidcManager != nil {
+		return d.oidcManager
+	}
+
+	d.oidcManager = oidc.NewManager(&http.Client{Timeout: 10 * time.Second})
+	return d.oidcManager
 }
 
 func (d *dependency) LockSystem() lock.LockSystem {

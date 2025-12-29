@@ -218,6 +218,22 @@ type CustomNavItem struct {
 	URL  string `json:"url"`
 }
 
+type OIDCProvider struct {
+	Name                 string   `json:"name"`
+	IssuerURL            string   `json:"issuer_url"`
+	ClientID             string   `json:"client_id"`
+	ClientSecret         string   `json:"client_secret"`
+	RedirectURI          string   `json:"redirect_uri"`
+	Scopes               []string `json:"scopes"`
+	Prompt               string   `json:"prompt,omitempty"`
+	UsePKCE              *bool    `json:"use_pkce,omitempty"`
+	AllowHTTPIssuer      bool     `json:"allow_http_issuer,omitempty"`
+	AllowHTTPRedirect    bool     `json:"allow_http_redirect,omitempty"`
+	AllowEmailLink       bool     `json:"allow_email_link,omitempty"`
+	AutoCreateUser       bool     `json:"auto_create_user,omitempty"`
+	AllowUnverifiedEmail bool     `json:"allow_unverified_email,omitempty"`
+}
+
 type CustomHTML struct {
 	HeadlessFooter string `json:"headless_footer,omitempty"`
 	HeadlessBody   string `json:"headless_bottom,omitempty"`
